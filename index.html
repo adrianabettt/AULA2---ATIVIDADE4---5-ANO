@@ -2,27 +2,29 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Atividade 02: Inspetor de Dados</title>
+    <title>Avaliação de Lógica: Atividade 02</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #fff5f8; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .app-container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 800px; text-align: center; border-top: 6px solid #e91e63; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .score-box { background: #ff4081; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 1.2em; }
+        .score-box { background: #fce4ec; color: #e91e63; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 1.2em; border: 2px solid #e91e63; }
         .level-badge { background: #333; color: white; padding: 5px 15px; border-radius: 5px; }
         
-        .mission-text { background: #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 1.1em; color: #ad1457; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
+        .mission-text { background: #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 1.1em; color: #ad1457; min-height: 60px; display: flex; flex-direction: column; justify-content: center; border-left: 5px solid #e91e63; }
         
         .list-visual { display: flex; justify-content: center; gap: 12px; margin: 40px 0; padding: 25px; background: #fafafa; border-radius: 10px; border: 2px solid #f8bbd0; min-height: 100px; flex-wrap: wrap; }
         .node { position: relative; padding: 15px 20px; background: #fff; color: #333; border: 2px solid #e91e63; border-radius: 8px; font-weight: bold; font-size: 1.1em; transition: 0.3s; cursor: pointer; }
-        .node:hover { background: #fce4ec; }
-        .node.selected { background: #e91e63; color: white; transform: scale(1.1); }
-        .index-label { position: absolute; top: -25px; left: 0; width: 100%; text-align: center; color: #888; font-size: 0.75em; }
+        .node.selected { background: #e91e63 !important; color: white !important; transform: scale(1.05); }
+        .node.correct-reveal { background: #28a745 !important; color: white !important; border-color: #1e7e34; }
+        .index-label { position: absolute; top: -25px; left: 0; width: 100%; text-align: center; color: #888; font-size: 0.75em; font-weight: bold; }
         
         button { padding: 15px 30px; font-size: 1.1em; background: #e91e63; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; margin-top: 10px; }
-        button:hover { background: #c2185b; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        button:hover { background: #c2185b; }
+        button:disabled { background: #ccc !important; cursor: not-allowed; }
         
-        #feedback { margin-top: 20px; font-weight: bold; height: 24px; }
+        #feedback { margin-top: 20px; font-weight: bold; min-height: 40px; padding: 10px; border-radius: 5px; }
+        .status-correct { background: #d4edda; color: #155724; }
+        .status-wrong { background: #f8d7da; color: #721c24; }
         .win-screen { display: none; padding: 40px; }
     </style>
 </head>
@@ -30,28 +32,29 @@
 
 <div class="app-container" id="game-ui">
     <div class="header">
-        <div class="level-badge">Nível <span id="level-num">1</span> de 10</div>
-        <div class="score-box">Pontos: <span id="pts">0</span> / 10</div>
+        <div class="level-badge">Desafio <span id="level-num">1</span> de 10</div>
+        <div class="score-box">Nota Final: <span id="pts">0</span> / 10</div>
     </div>
 
     <div class="mission-text" id="mission">
         <strong>CATEGORIA:</strong> <span id="category-name">Frutas</span><br>
-        <small>Clique no item que NÃO pertence à categoria acima e depois confirme.</small>
+        <small>Selecione o item que NÃO pertence à categoria e confirme sua escolha.</small>
     </div>
 
     
 
     <div class="list-visual" id="listDisplay"></div>
 
-    <button id="btnAction" onclick="checkAnswer()">Remover Intruso</button>
+    <button id="btnAction" onclick="checkAnswer()">Confirmar Inspeção (Chance Única)</button>
     
     <div id="feedback"></div>
 </div>
 
 <div class="app-container win-screen" id="win-ui">
-    <h1 style="color: #e91e63;">🕵️‍♀️ INSPEÇÃO COMPLETA!</h1>
-    <p style="font-size: 1.2em;">Você limpou todas as listas e eliminou os intrusos com sucesso.</p>
-    <button onclick="location.reload()" style="background: #333;">Recomeçar Treinamento</button>
+    <h1 style="color: #e91e63;">📊 Inspeção Finalizada</h1>
+    <p style="font-size: 1.5em;">Sua pontuação de análise foi: <strong id="final-score">0</strong> de 10</p>
+    <p id="evaluation-text"></p>
+    <button onclick="location.reload()" style="background: #333; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Reiniciar Avaliação</button>
 </div>
 
 <script>
@@ -83,15 +86,20 @@
         c.list.forEach((v, i) => {
             const node = document.createElement('div');
             node.className = 'node';
+            node.id = 'node-' + i;
             node.innerHTML = `<span class="index-label">índice ${i}</span>${v}`;
             node.onclick = () => selectNode(i);
             display.appendChild(node);
         });
-        document.getElementById('feedback').innerText = "";
+        
+        const fb = document.getElementById('feedback');
+        fb.innerText = "";
+        fb.className = "";
         document.getElementById('btnAction').disabled = false;
     }
 
     function selectNode(idx) {
+        if(document.getElementById('btnAction').disabled) return;
         selectedIdx = idx;
         const nodes = document.querySelectorAll('.node');
         nodes.forEach((n, i) => {
@@ -101,34 +109,47 @@
 
     function checkAnswer() {
         if(selectedIdx === -1) {
-            document.getElementById('feedback').innerText = "⚠️ Selecione um item na lista primeiro!";
-            document.getElementById('feedback').style.color = "orange";
+            const fb = document.getElementById('feedback');
+            fb.innerText = "⚠️ Você precisa selecionar um item antes de confirmar!";
+            fb.style.color = "#ad1457";
             return;
         }
 
         const c = challenges[currentLevel];
         const fb = document.getElementById('feedback');
+        document.getElementById('btnAction').disabled = true;
 
         if(selectedIdx === c.target) {
             score++;
             document.getElementById('pts').innerText = score;
-            fb.innerHTML = "✅ Alvo eliminado! O item no índice " + selectedIdx + " era o intruso.";
-            fb.style.color = "green";
-            document.getElementById('btnAction').disabled = true;
-
-            setTimeout(() => {
-                currentLevel++;
-                if(currentLevel < challenges.length) {
-                    initLevel();
-                } else {
-                    document.getElementById('game-ui').style.display = 'none';
-                    document.getElementById('win-ui').style.display = 'block';
-                }
-            }, 1500);
+            fb.innerHTML = "✅ RESPOSTA CORRETA! O intruso foi removido.";
+            fb.className = "status-correct";
         } else {
-            fb.innerHTML = "❌ Errado! Esse item pertence à categoria. Analise os outros!";
-            fb.style.color = "red";
+            fb.innerHTML = `❌ INCORRETO! O intruso era <b>${c.list[c.target]}</b> no índice ${c.target}.`;
+            fb.className = "status-wrong";
+            // Destaca em verde onde era o correto para o aluno aprender
+            document.getElementById('node-' + c.target).classList.add('correct-reveal');
         }
+
+        setTimeout(() => {
+            currentLevel++;
+            if(currentLevel < challenges.length) {
+                initLevel();
+            } else {
+                showResults();
+            }
+        }, 2500);
+    }
+
+    function showResults() {
+        document.getElementById('game-ui').style.display = 'none';
+        document.getElementById('win-ui').style.display = 'block';
+        document.getElementById('final-score').innerText = score;
+        
+        const evalTxt = document.getElementById('evaluation-text');
+        if(score >= 8) evalTxt.innerText = "Excelente! Seu senso analítico para dados está muito aguçado.";
+        else if(score >= 5) evalTxt.innerText = "Bom desempenho. Você consegue identificar padrões na maioria das vezes.";
+        else evalTxt.innerText = "Atenção! Pratique mais a classificação de categorias e tipos de dados.";
     }
 
     initLevel();
