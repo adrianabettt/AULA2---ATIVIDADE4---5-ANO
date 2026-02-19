@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Atividade 02: Inspetor de Dados</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #fff5f8; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .app-container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 800px; text-align: center; border-top: 6px solid #e91e63; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .score-box { background: #ff4081; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 1.2em; }
+        .level-badge { background: #333; color: white; padding: 5px 15px; border-radius: 5px; }
+        
+        .mission-text { background: #fce4ec; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 1.1em; color: #ad1457; min-height: 60px; display: flex; flex-direction: column; justify-content: center; }
+        
+        .list-visual { display: flex; justify-content: center; gap: 12px; margin: 40px 0; padding: 25px; background: #fafafa; border-radius: 10px; border: 2px solid #f8bbd0; min-height: 100px; flex-wrap: wrap; }
+        .node { position: relative; padding: 15px 20px; background: #fff; color: #333; border: 2px solid #e91e63; border-radius: 8px; font-weight: bold; font-size: 1.1em; transition: 0.3s; cursor: pointer; }
+        .node:hover { background: #fce4ec; }
+        .node.selected { background: #e91e63; color: white; transform: scale(1.1); }
+        .index-label { position: absolute; top: -25px; left: 0; width: 100%; text-align: center; color: #888; font-size: 0.75em; }
+        
+        button { padding: 15px 30px; font-size: 1.1em; background: #e91e63; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; margin-top: 10px; }
+        button:hover { background: #c2185b; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        
+        #feedback { margin-top: 20px; font-weight: bold; height: 24px; }
+        .win-screen { display: none; padding: 40px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="game-ui">
+    <div class="header">
+        <div class="level-badge">Nível <span id="level-num">1</span> de 10</div>
+        <div class="score-box">Pontos: <span id="pts">0</span> / 10</div>
+    </div>
+
+    <div class="mission-text" id="mission">
+        <strong>CATEGORIA:</strong> <span id="category-name">Frutas</span><br>
+        <small>Clique no item que NÃO pertence à categoria acima e depois confirme.</small>
+    </div>
+
+    
+
+    <div class="list-visual" id="listDisplay"></div>
+
+    <button id="btnAction" onclick="checkAnswer()">Remover Intruso</button>
+    
+    <div id="feedback"></div>
+</div>
+
+<div class="app-container win-screen" id="win-ui">
+    <h1 style="color: #e91e63;">🕵️‍♀️ INSPEÇÃO COMPLETA!</h1>
+    <p style="font-size: 1.2em;">Você limpou todas as listas e eliminou os intrusos com sucesso.</p>
+    <button onclick="location.reload()" style="background: #333;">Recomeçar Treinamento</button>
+</div>
+
+<script>
+    const challenges = [
+        { cat: "FRUTAS", list: ["Maçã", "Uva", "Cachorro", "Pera"], target: 2 },
+        { cat: "NÚMEROS", list: [10, 20, "Trinta", 40, 50], target: 2 },
+        { cat: "CORES", list: ["Azul", "Verde", "Banana", "Amarelo"], target: 2 },
+        { cat: "ANIMAIS", list: ["Gato", "Carro", "Cachorro", "Leão"], target: 1 },
+        { cat: "OBJETOS ESCOLARES", list: ["Lápis", "Borracha", "Pizza", "Caderno"], target: 2 },
+        { cat: "NOMES PRÓPRIOS", list: ["Ana", "Bia", "123", "Caio"], target: 2 },
+        { cat: "DIAS DA SEMANA", list: ["Segunda", "Janeiro", "Terça", "Quarta"], target: 1 },
+        { cat: "PAÍSES", list: ["Brasil", "Chile", "Paris", "México"], target: 2 },
+        { cat: "ESPORTES", list: ["Futebol", "Tênis", "Natação", "Martelo"], target: 3 },
+        { cat: "SABORES DE SORVETE", list: ["Chocolate", "Creme", "Sabão", "Morango"], target: 2 }
+    ];
+
+    let currentLevel = 0;
+    let score = 0;
+    let selectedIdx = -1;
+
+    function initLevel() {
+        const c = challenges[currentLevel];
+        document.getElementById('level-num').innerText = currentLevel + 1;
+        document.getElementById('category-name').innerText = c.cat;
+        selectedIdx = -1;
+        
+        const display = document.getElementById('listDisplay');
+        display.innerHTML = '';
+        c.list.forEach((v, i) => {
+            const node = document.createElement('div');
+            node.className = 'node';
+            node.innerHTML = `<span class="index-label">índice ${i}</span>${v}`;
+            node.onclick = () => selectNode(i);
+            display.appendChild(node);
+        });
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('btnAction').disabled = false;
+    }
+
+    function selectNode(idx) {
+        selectedIdx = idx;
+        const nodes = document.querySelectorAll('.node');
+        nodes.forEach((n, i) => {
+            n.classList.toggle('selected', i === idx);
+        });
+    }
+
+    function checkAnswer() {
+        if(selectedIdx === -1) {
+            document.getElementById('feedback').innerText = "⚠️ Selecione um item na lista primeiro!";
+            document.getElementById('feedback').style.color = "orange";
+            return;
+        }
+
+        const c = challenges[currentLevel];
+        const fb = document.getElementById('feedback');
+
+        if(selectedIdx === c.target) {
+            score++;
+            document.getElementById('pts').innerText = score;
+            fb.innerHTML = "✅ Alvo eliminado! O item no índice " + selectedIdx + " era o intruso.";
+            fb.style.color = "green";
+            document.getElementById('btnAction').disabled = true;
+
+            setTimeout(() => {
+                currentLevel++;
+                if(currentLevel < challenges.length) {
+                    initLevel();
+                } else {
+                    document.getElementById('game-ui').style.display = 'none';
+                    document.getElementById('win-ui').style.display = 'block';
+                }
+            }, 1500);
+        } else {
+            fb.innerHTML = "❌ Errado! Esse item pertence à categoria. Analise os outros!";
+            fb.style.color = "red";
+        }
+    }
+
+    initLevel();
+</script>
+
+</body>
+</html>
